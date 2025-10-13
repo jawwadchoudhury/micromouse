@@ -14,10 +14,8 @@ namespace Micromouse_demo1
     public partial class Form1 : Form
     {
 
-        //private int[] mazeArray = {3, 3, 9, 1, 3, 10, 14, 14, 12, 4, 4};
-        private int[] mazeArray = {0, 9, 0, 10, 12, 13, 0};
-        private Node[] maze = { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
-        private int[] mazeSize = { 3, 3 };
+        //private Node[] maze = { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
+        private List<Node> maze = new List<Node> { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
         public Form1()
         {
             InitializeComponent();
@@ -25,11 +23,10 @@ namespace Micromouse_demo1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            generateMaze(maze, 50);
-            Random rnd = new Random();
-            int rnd1 = rnd.Next(0, 16);
-            int rnd2 = rnd.Next(0, 16);
-            outputLabel1.Text = $"From 6 to 9/10/12/13: {intListToString(returnValidMoves(new Node(6), new Node[] { new Node(9), new Node(10), new Node(12), new Node(13) } ))}";
+            //generateMaze(maze, 3, 3, 50);
+            //generateRandomMaze(3, 3, 50);
+            //outputLabel1.Text = $"From 14 to 1/14/4/8: {intListToString(returnValidMoves(new Node(14), new Node[] { new Node(1), new Node(4), new Node(4), new Node(8) } ))}";
+            //outputLabel1.Text = $"{validMove(new Node(5), new Node(3), 2)}";
         }
         private bool validMove(Node startNode, Node endNode, int direction) //Eg. validMove(new Node(1), new Node(2), 2) would be true, final int is TRBL notation again.
         {
@@ -171,39 +168,101 @@ namespace Micromouse_demo1
                 }
             }
         }
-        private void generateMaze(Node[] maze, int boxSize)
+
+        private List<Node> generateRandomMazeList(int width, int height)
         {
-            int sx = 10; // start x, like a typewriter on a new line sort of thing
-            int x = sx;
-            int y = 50;
-            mazeArrayInt = 0;
-            BoxSize = boxSize;
-            for (int i = 0; i < mazeSize[0]; i++)
+            List<Node> nodes = new List<Node>();
+            Random rnd = new Random();
+            for (int i = 0; i < (width * height); i++)
             {
-                for (int j = 0; j < mazeSize[1]; j++)
+                nodes.Add(new Node(rnd.Next(0, 16)));
+            }
+            return nodes;
+        }
+        private void generateRandomMaze(int width, int height, int boxSize)
+        {
+            int sx = 0;
+            int x = sx;
+            int y = 0;
+            List<Node> nodes = generateRandomMazeList(width, height);
+            int nodeIndex = 0;
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
                 {
                     PictureBox pictureBox = new PictureBox();
-                    pictureBox.Name = $"pictureBox_{i}";
+                    pictureBox.Name = $"pictureBox_{i}_{j}";
                     pictureBox.Size = new Size(boxSize, boxSize);
                     pictureBox.Location = new Point(x, y);
+
+                    pictureBox.Tag = nodes[nodeIndex];
+                    nodeIndex++;
+
+                    x = x + boxSize;
+                    randomMaze.Controls.Add(pictureBox);
+                    pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
+                }
+                x = sx;
+                y = y + boxSize;
+            }
+        }
+        private void generateMaze(List<Node> maze, int width, int height, int boxSize)
+        {
+            int sx = 10;
+            int x = sx;
+            int y = 50;
+            string nodeList = "";
+            foreach (Node node in maze)
+            {
+                nodeList += $"{node.getDecimalValue()}, ";
+            }
+            outputLabel1.Text = nodeList;
+            int nodeIndex = 0;
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    PictureBox pictureBox = new PictureBox();
+                    pictureBox.Name = $"pictureBox_{i}_{j}";
+                    pictureBox.Size = new Size(boxSize, boxSize);
+                    pictureBox.Location = new Point(x, y);
+
+                    pictureBox.Tag = maze[nodeIndex];
+                    nodeIndex++;
+
                     x = x + boxSize;
                     this.Controls.Add(pictureBox);
                     pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
-                };
+                }
                 x = sx;
                 y = y + boxSize;
-            };
+            }
         }
 
-        int mazeArrayInt;
-        int BoxSize = 50;
+        public List<Node> mazeList;
+        public int BoxSize = 50;
         private void mazeBox_paint(object sender, PaintEventArgs e)
         {
+            PictureBox currentBox = (PictureBox)sender;
+            Node node = (Node)currentBox.Tag;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            Shape shape = new Shape(maze[mazeArrayInt], BoxSize, Color.Black, 5);
+            Shape shape = new Shape(node, BoxSize, Color.Black, 5);
             shape.DrawShape(e.Graphics);
-            mazeArrayInt++;
+            
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            generateRandomMaze(3, 3, 50);
+        }
+
+        private void generateRandomMaze_Button_Click(object sender, EventArgs e)
+        {
+            foreach (PictureBox p in randomMaze.Controls)
+            {
+                randomMaze.Controls.Remove(p);
+            }
+            generateRandomMaze(int.Parse(width_textBox.Text), int.Parse(height_textBox.Text), 50);
+        }
     }
 }
