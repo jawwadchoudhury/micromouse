@@ -16,6 +16,35 @@ namespace Micromouse_demo1
 
         //private Node[] maze = { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
         private List<Node> maze = new List<Node> { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
+        public List<Node> currentMaze = new List<Node>();
+        public int[] currentMazeDimensions = new int[2];
+        private Node[] topNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(8), new Node(9), new Node(10), new Node(11) };
+        private Node[] rightNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(4), new Node(5), new Node(6), new Node(7) };
+        private Node[] bottomNodes = new Node[8] { new Node(0), new Node(2), new Node(4), new Node(6), new Node(8), new Node(10), new Node(12), new Node(14) };
+        private Node[] leftNodes = new Node[8] { new Node(0), new Node(1), new Node(4), new Node(5), new Node(8), new Node(9), new Node(12), new Node(13) };
+        public int nodeCount = 0;
+        
+        class mazePictureBox : System.Windows.Forms.PictureBox
+        {
+            public Node Node { get; private set; }
+            public int WidthCount { get; private set; }
+            public int HeightCount { get; private set; }
+
+            public void setNode(Node node)
+            {
+                Node = node;
+            }
+
+            public void setWidthCount(int widthCount)
+            {
+                WidthCount = widthCount;
+            }
+
+            public void setHeightCount(int heightCount)
+            {
+                HeightCount = heightCount;
+            }
+        }
         public Form1()
         {
             InitializeComponent();
@@ -27,6 +56,59 @@ namespace Micromouse_demo1
             //generateRandomMaze(3, 3, 50);
             //outputLabel1.Text = $"From 14 to 1/14/4/8: {intListToString(returnValidMoves(new Node(14), new Node[] { new Node(1), new Node(4), new Node(4), new Node(8) } ))}";
             //outputLabel1.Text = $"{validMove(new Node(5), new Node(3), 2)}";
+        }
+
+        private void createEmptyMaze(int height, int width, int boxSize)
+        {
+            int sx = 0;
+            int x = sx;
+            int y = 0;
+            currentMazeDimensions[0] = width;
+            currentMazeDimensions[1] = height;
+            currentMaze.Clear();
+            for (int i = 0; i < width * height; i++)
+            {
+                currentMaze.Add(new Node(15));
+            }
+            int nodeIndex = 0;
+            nodeCount = width * height;
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    mazePictureBox pictureBox = new mazePictureBox();
+                    pictureBox.Name = $"pictureBox_{nodeIndex}";
+                    pictureBox.Size = new Size(boxSize, boxSize);
+                    pictureBox.Location = new Point(x, y);
+
+                    pictureBox.setNode(new Node(15));
+                    pictureBox.setWidthCount(j);
+                    pictureBox.setHeightCount(i);
+
+                    nodeIndex++;
+
+                    x = x + boxSize;
+                    randomMaze.Controls.Add(pictureBox);
+                    pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
+                }
+                x = sx;
+                y = y + boxSize;
+            }
+            outputLabel1.Text = nodeCount.ToString();
+            primsAlgorithm();
+        }
+
+        private void primsAlgorithm()
+        {
+            Random rnd = new Random();
+            int node = rnd.Next(0, nodeCount);
+            Control[] c = randomMaze.Controls.Find($"pictureBox_{node}", true);
+            c[0].BackColor = Color.Cornsilk;
+        }
+
+        private void findAdjacentNodes(Node node, List<Node> maze, int[] mazeDimesions)
+        {
+            
         }
         private bool validMove(Node startNode, Node endNode, int direction) //Eg. validMove(new Node(1), new Node(2), 2) would be true, final int is TRBL notation again.
         {
@@ -195,11 +277,17 @@ namespace Micromouse_demo1
                     pictureBox.Size = new Size(boxSize, boxSize);
                     pictureBox.Location = new Point(x, y);
 
+                    //Label label = new Label();
+                    //label.Name = $"label_{i}_{j}";
+                    //label.Location = new Point(x, y);
+                    //label.ForeColor = Color.Black;
+
                     pictureBox.Tag = nodes[nodeIndex];
                     nodeIndex++;
 
                     x = x + boxSize;
                     randomMaze.Controls.Add(pictureBox);
+                    //randomMaze.Controls.Add(label);
                     pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
                 }
                 x = sx;
@@ -237,14 +325,13 @@ namespace Micromouse_demo1
                 x = sx;
                 y = y + boxSize;
             }
-        }
+        } // Don't use this, it doesn't work, stick to the randomly generated mazes
 
-        public List<Node> mazeList;
         public int BoxSize = 50;
         private void mazeBox_paint(object sender, PaintEventArgs e)
         {
-            PictureBox currentBox = (PictureBox)sender;
-            Node node = (Node)currentBox.Tag;
+            mazePictureBox currentBox = (mazePictureBox)sender;
+            Node node = currentBox.Node;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             Shape shape = new Shape(node, BoxSize, Color.Black, 5);
             shape.DrawShape(e.Graphics);
@@ -263,6 +350,15 @@ namespace Micromouse_demo1
                 randomMaze.Controls.Remove(p);
             }
             generateRandomMaze(int.Parse(width_textBox.Text), int.Parse(height_textBox.Text), 50);
+        }
+
+        private void generateNewMaze_Click(object sender, EventArgs e)
+        {
+            foreach (Control c in randomMaze.Controls)
+            {
+                randomMaze.Controls.Remove(c);
+            }
+            createEmptyMaze(int.Parse(newMaze_width.Text), int.Parse(newMaze_height.Text), 50);
         }
     }
 }
