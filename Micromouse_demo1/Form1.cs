@@ -7,32 +7,113 @@ using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Micromouse_demo1
 {
     public partial class Form1 : Form
     {
-
-        //private Node[] maze = { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
-        private List<Node> maze = new List<Node> { new Node(9), new Node(1), new Node(3), new Node(10), new Node(14), new Node(14), new Node(12), new Node(4), new Node(4) };
-        public List<Node> currentMaze = new List<Node>();
-        public int[] currentMazeDimensions = new int[2];
+        public List<MazeNode> currentMaze = new List<MazeNode>();
+        public int[] currentMazeDimensions = new int[4]; // 0 = width, 1 = height, 2 = box size, 3 = node count
         private Node[] topNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(8), new Node(9), new Node(10), new Node(11) };
         private Node[] rightNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(4), new Node(5), new Node(6), new Node(7) };
         private Node[] bottomNodes = new Node[8] { new Node(0), new Node(2), new Node(4), new Node(6), new Node(8), new Node(10), new Node(12), new Node(14) };
         private Node[] leftNodes = new Node[8] { new Node(0), new Node(1), new Node(4), new Node(5), new Node(8), new Node(9), new Node(12), new Node(13) };
+        private int[] topIndexes = new int[8] { 0, 1, 2, 3, 8, 9, 10, 11 };
+        private int[] rightIndexes = new int[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
+        private int[] bottomIndexes = new int[8] { 0, 2, 4, 6, 8, 10, 12, 14 };
+        private int[] leftIndexes = new int[8] { 0, 1, 4, 5, 8, 9, 12, 13 };
         public int nodeCount = 0;
         
-        class mazePictureBox : System.Windows.Forms.PictureBox
+        public class nodalPictureBox : System.Windows.Forms.PictureBox
         {
-            public Node Node { get; private set; }
+            public MazeNode MazeNode { get; private set; }
+
+            public void setNode(MazeNode node)
+            {
+                MazeNode = node;
+            }
+
+            public void setWidthCount(int widthCount)
+            {
+                MazeNode.setWidthCount(widthCount);
+            }
+
+            public void setHeightCount(int heightCount)
+            {
+                MazeNode.setHeightCount(heightCount);
+            }
+
+            public void setNodeIndex(int nodeIndex)
+            {
+                MazeNode.setNodeIndex(nodeIndex);
+            }
+        }
+        public class Node
+        {
+            public int DecimalValue { get; private set; }
+            //T, R, B, L
+            //1111 is a rectangle
+
+            public Node(int decimalValue)
+            {
+                DecimalValue = decimalValue;
+            }
+            public bool getTopValue()
+            {
+                return ((uint)DecimalValue & 1) == 1;
+            }
+            public bool getRightValue()
+            {
+                return ((uint)DecimalValue >> 1 & 1) == 1;
+            }
+            public bool getBottomValue()
+            {
+                return ((uint)DecimalValue >> 2 & 1) == 1;
+            }
+            public bool getLeftValue()
+            {
+                return ((uint)DecimalValue >> 3 & 1) == 1;
+            }
+
+            public void toggleTopValue()
+            {
+                DecimalValue ^= 1;
+            }
+            public void toggleRightValue()
+            {
+                DecimalValue ^= 2;
+            }
+            public void toggleBottomValue()
+            {
+                DecimalValue ^= 4;
+            }
+            public void toggleLeftValue()
+            {
+                DecimalValue ^= 8;
+            }
+
+            public int getDecimalValue()
+            {
+                return DecimalValue;
+            }
+            public void setDecimalValue(int decimalValue)
+            {
+                DecimalValue = decimalValue;
+            } 
+        }
+        public class MazeNode : Node
+        {
             public int WidthCount { get; private set; }
             public int HeightCount { get; private set; }
 
-            public void setNode(Node node)
+            public int NodeIndex { get; private set; }
+            public MazeNode(int decimalValue, int widthCount, int heightCount, int nodeIndex) : base(decimalValue)
             {
-                Node = node;
+                WidthCount = widthCount;
+                HeightCount = heightCount;
+                NodeIndex = nodeIndex;
             }
 
             public void setWidthCount(int widthCount)
@@ -44,7 +125,47 @@ namespace Micromouse_demo1
             {
                 HeightCount = heightCount;
             }
+
+            public void setNodeIndex(int nodeIndex)
+            {
+                NodeIndex = nodeIndex;
+            }
         }
+        public class Shape
+        {
+            private int DecimalValue;
+            private Pen pen;
+            private int BoxWidth;
+
+            public Shape(Node node, int boxWidth, Color colour, float width)
+            {
+                DecimalValue = node.getDecimalValue();
+                pen = new Pen(colour, width);
+                BoxWidth = boxWidth;
+            }
+
+
+            public void DrawShape(Graphics g)
+            {
+                if (((uint)DecimalValue & 1) == 1)
+                {
+                    g.DrawLine(pen, new Point(0, 0), new Point(BoxWidth, 0));
+                }
+                if (((uint)DecimalValue >> 1 & 1) == 1)
+                {
+                    g.DrawLine(pen, new Point(BoxWidth, 0), new Point(BoxWidth, BoxWidth));
+                }
+                if (((uint)DecimalValue >> 2 & 1) == 1)
+                {
+                    g.DrawLine(pen, new Point(0, BoxWidth), new Point(BoxWidth, BoxWidth));
+                }
+                if (((uint)DecimalValue >> 3 & 1) == 1)
+                {
+                    g.DrawLine(pen, new Point(0, 0), new Point(0, BoxWidth));
+                }
+            }
+        }
+
         public Form1()
         {
             InitializeComponent();
@@ -57,308 +178,155 @@ namespace Micromouse_demo1
             //outputLabel1.Text = $"From 14 to 1/14/4/8: {intListToString(returnValidMoves(new Node(14), new Node[] { new Node(1), new Node(4), new Node(4), new Node(8) } ))}";
             //outputLabel1.Text = $"{validMove(new Node(5), new Node(3), 2)}";
         }
-
-        private void createEmptyMaze(int height, int width, int boxSize)
+        
+        private void createEmptyMaze(int width, int height,  int boxSize)
         {
-            int sx = 0;
-            int x = sx;
-            int y = 0;
+            currentMaze.Clear();
             currentMazeDimensions[0] = width;
             currentMazeDimensions[1] = height;
-            currentMaze.Clear();
-            for (int i = 0; i < width * height; i++)
-            {
-                currentMaze.Add(new Node(15));
-            }
+            currentMazeDimensions[2] = boxSize;
+            currentMazeDimensions[3] = width * height;
             int nodeIndex = 0;
-            nodeCount = width * height;
+            for (int h = 0; h < height; h++)
+            {
+                for (int w = 0; w < width; w++)
+                {
+                    currentMaze.Add(new MazeNode(15, w, h, nodeIndex));
+                    nodeIndex++;
+                }
+            }
+
+        }
+
+        private void drawCurrentMaze()
+        {
+            mazePanel.Controls.Clear();
+            int sx = 0; // Starting X
+            int x = sx; // Initalise X to be Starting X
+            int y = 0; // Intialise Y to be 0
+            int width = currentMazeDimensions[0];
+            int height = currentMazeDimensions[1];
+            int boxSize = currentMazeDimensions[2];
+            int nodeIndex = 0;
             for (int i = 0; i < height; i++)
             {
                 for (int j = 0; j < width; j++)
                 {
-                    mazePictureBox pictureBox = new mazePictureBox();
+                    nodalPictureBox pictureBox = new nodalPictureBox();
                     pictureBox.Name = $"pictureBox_{nodeIndex}";
                     pictureBox.Size = new Size(boxSize, boxSize);
                     pictureBox.Location = new Point(x, y);
 
-                    pictureBox.setNode(new Node(15));
-                    pictureBox.setWidthCount(j);
-                    pictureBox.setHeightCount(i);
+                    pictureBox.setNode(currentMaze[nodeIndex]);
 
                     nodeIndex++;
 
                     x = x + boxSize;
-                    randomMaze.Controls.Add(pictureBox);
+                    mazePanel.Controls.Add(pictureBox);
                     pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
                 }
                 x = sx;
                 y = y + boxSize;
             }
-            outputLabel1.Text = nodeCount.ToString();
-            primsAlgorithm();
         }
 
-        private void primsAlgorithm()
+        private void primsAlgorithm(int mazeIndex)
         {
-            Random rnd = new Random();
-            int node = rnd.Next(0, nodeCount);
-            Control[] c = randomMaze.Controls.Find($"pictureBox_{node}", true);
-            c[0].BackColor = Color.Cornsilk;
-        }
-
-        private void findAdjacentNodes(Node node, List<Node> maze, int[] mazeDimesions)
-        {
+            currentMaze[mazeIndex].setDecimalValue(0);
             
-        }
-        private bool validMove(Node startNode, Node endNode, int direction) //Eg. validMove(new Node(1), new Node(2), 2) would be true, final int is TRBL notation again.
-        {
-            if (direction == 1) //Top
+            MazeNode[] adjacentNodes = returnAdjacentNodes(currentMaze, mazeIndex);
+            for (int i = 0; i < 1; i++)
             {
-                if (startNode.getTopValue() == 0 && endNode.getBottomValue() == 0)
+                
+                Random random = new Random();
+                int x = random.Next(0, 4);
+                if (adjacentNodes[x] == null) continue;
+                switch (x)
                 {
-                    return true;
+                    case 0:
+                        if (adjacentNodes[i].getBottomValue()) adjacentNodes[i].toggleBottomValue();
+                        break;
+                    case 1:
+                        if (adjacentNodes[i].getLeftValue()) adjacentNodes[i].toggleLeftValue();
+                        break;
+                    case 2:
+                        if (adjacentNodes[i].getTopValue()) adjacentNodes[i].toggleTopValue();
+                        break;
+                    case 3:
+                        if (adjacentNodes[i].getRightValue()) adjacentNodes[i].toggleRightValue();
+                        break;
                 }
             }
-            else if (direction == 2) //Right
-            {
-                if (startNode.getRightValue() == 0 && endNode.getLeftValue() == 0)
-                {
-                    return true;
-                }
-            }
-            else if (direction == 3) //Bottom
-            {
-                if (startNode.getBottomValue() == 0 && endNode.getTopValue() == 0)
-                {
-                    return true;
-                }
-            }
-            else if (direction == 4) //Left
-            {
-                if (startNode.getLeftValue() == 0 && endNode.getRightValue() == 0)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        private string intListToString(List<int> list)
-        {
-            string output = "";
-            foreach (int i in list)
-            {
-                output = output + i.ToString() + ", ";
-            }
-            return output;
-        }
-        private List<int> returnValidMoves(Node startNode, Node[] surroundingNodes)
-        {
-            List<int> validMoves = new List<int>();
-            if (startNode.getTopValue() == 0 && surroundingNodes[0].getBottomValue() == 0)
-            {
-                validMoves.Add(1);
-            }
-            if (startNode.getRightValue() == 0 && surroundingNodes[1].getLeftValue() == 0)
-            {
-                validMoves.Add(2);
-            }
-            if (startNode.getBottomValue() == 0 && surroundingNodes[2].getTopValue() == 0)
-            {
-                validMoves.Add(3);
-            }
-            if (startNode.getLeftValue() == 0 && surroundingNodes[3].getRightValue() == 0)
-            {
-                validMoves.Add(4);
-            }
-            return validMoves;
+            drawCurrentMaze();
+
+            nodalPictureBox nodalPictureBox = (nodalPictureBox)mazePanel.Controls[mazeIndex];
+            nodalPictureBox.BackColor = Color.FromArgb(255, 255, 155);
         }
 
-        public class Node
+        private MazeNode[] returnAdjacentNodes(List<MazeNode> maze, int nodeIndex)
         {
-            private uint BinaryValue;
-            private int DecimalValue;
-            //T, R, B, L
-            //1111 is a rectangle
+            MazeNode[] adjacentNodes = new MazeNode[4];
 
-            public Node(int decimalValue)
-            {
-                DecimalValue = decimalValue;
-                BinaryValue = (uint)decimalValue;
-            }
-            public int getTopValue()
-            {
-                return (int)(BinaryValue) & 1;
-            }
-            public int getRightValue()
-            {
-                return (int)(BinaryValue >> 1) & 1;
-            }
-            public int getBottomValue()
-            {
-                return (int)(BinaryValue >> 2) & 1;
-            }
-            public int getLeftValue()
-            {
-                return (int)(BinaryValue >> 3) & 1;
-            }
-            public uint getBinaryValue()
-            {
-                return BinaryValue;
-            }
-            public string getBinaryStringValue()
-            {
-                return Convert.ToString(DecimalValue, 2).PadLeft(4, '0');
-            }
-            public int getDecimalValue()
-            {
-                return DecimalValue;
-            }
-        }
-        public class Shape
-        {
-            private uint BinaryValue;
-            private int DecimalValue;
-            private Pen pen;
-            private int BoxWidth;
+            MazeNode centralNode = maze[nodeIndex];
 
-            public Shape(Node node, int boxWidth, Color colour, float width)
-            {
-                DecimalValue = node.getDecimalValue();
-                BinaryValue = node.getBinaryValue();
-                pen = new Pen(colour, width);
-                BoxWidth = boxWidth;
-            }
+            MazeNode upperNode;
+            MazeNode rightNode;
+            MazeNode bottomNode;
+            MazeNode leftNode;
 
+            upperNode = (centralNode.NodeIndex - currentMazeDimensions[0] >= 0) ? currentMaze[centralNode.NodeIndex - currentMazeDimensions[0]] : null;
+            rightNode = (centralNode.WidthCount + 1 <= currentMazeDimensions[0] - 1) ? currentMaze[centralNode.NodeIndex + 1] : null;
+            bottomNode = (centralNode.NodeIndex + currentMazeDimensions[0] < currentMazeDimensions[3]) ? currentMaze[centralNode.NodeIndex + currentMazeDimensions[0]] : null;
+            leftNode = (centralNode.WidthCount - 1 >= 0) ? currentMaze[centralNode.NodeIndex - 1] : null;
 
-            public void DrawShape(Graphics g)
-            {
-                if ((BinaryValue & 1) == 1)
-                {
-                    g.DrawLine(pen, new Point(0, 0), new Point(BoxWidth, 0));
-                }
-                if ((BinaryValue >> 1 & 1) == 1)
-                {
-                    g.DrawLine(pen, new Point(BoxWidth, 0), new Point(BoxWidth, BoxWidth));
-                }
-                if ((BinaryValue >> 2 & 1) == 1)
-                {
-                    g.DrawLine(pen, new Point(0, BoxWidth), new Point(BoxWidth, BoxWidth));
-                }
-                if ((BinaryValue >> 3 & 1) == 1)
-                {
-                    g.DrawLine(pen, new Point(0, 0), new Point(0, BoxWidth));
-                }
-            }
+            outputLabel1.Text = $"U: {(upperNode != null ? upperNode.NodeIndex.ToString() : "null")}, R: {(rightNode != null ? rightNode.NodeIndex.ToString() : "null")}, D: {(bottomNode != null ? bottomNode.NodeIndex.ToString() : "null")}, L: {(leftNode != null ? leftNode.NodeIndex.ToString() : "null")}";
+
+            if (upperNode != null) adjacentNodes[0] = upperNode;
+            if (rightNode != null) adjacentNodes[1] = rightNode;
+            if (bottomNode != null) adjacentNodes[2] = bottomNode;
+            if (leftNode != null) adjacentNodes[3] = leftNode;
+
+            return adjacentNodes;
         }
 
-        private List<Node> generateRandomMazeList(int width, int height)
-        {
-            List<Node> nodes = new List<Node>();
-            Random rnd = new Random();
-            for (int i = 0; i < (width * height); i++)
-            {
-                nodes.Add(new Node(rnd.Next(0, 16)));
-            }
-            return nodes;
-        }
-        private void generateRandomMaze(int width, int height, int boxSize)
-        {
-            int sx = 0;
-            int x = sx;
-            int y = 0;
-            List<Node> nodes = generateRandomMazeList(width, height);
-            int nodeIndex = 0;
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < width; j++)
-                {
-                    PictureBox pictureBox = new PictureBox();
-                    pictureBox.Name = $"pictureBox_{i}_{j}";
-                    pictureBox.Size = new Size(boxSize, boxSize);
-                    pictureBox.Location = new Point(x, y);
-
-                    //Label label = new Label();
-                    //label.Name = $"label_{i}_{j}";
-                    //label.Location = new Point(x, y);
-                    //label.ForeColor = Color.Black;
-
-                    pictureBox.Tag = nodes[nodeIndex];
-                    nodeIndex++;
-
-                    x = x + boxSize;
-                    randomMaze.Controls.Add(pictureBox);
-                    //randomMaze.Controls.Add(label);
-                    pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
-                }
-                x = sx;
-                y = y + boxSize;
-            }
-        }
-        private void generateMaze(List<Node> maze, int width, int height, int boxSize)
-        {
-            int sx = 10;
-            int x = sx;
-            int y = 50;
-            string nodeList = "";
-            foreach (Node node in maze)
-            {
-                nodeList += $"{node.getDecimalValue()}, ";
-            }
-            outputLabel1.Text = nodeList;
-            int nodeIndex = 0;
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < width; j++)
-                {
-                    PictureBox pictureBox = new PictureBox();
-                    pictureBox.Name = $"pictureBox_{i}_{j}";
-                    pictureBox.Size = new Size(boxSize, boxSize);
-                    pictureBox.Location = new Point(x, y);
-
-                    pictureBox.Tag = maze[nodeIndex];
-                    nodeIndex++;
-
-                    x = x + boxSize;
-                    this.Controls.Add(pictureBox);
-                    pictureBox.Paint += new PaintEventHandler(mazeBox_paint);
-                }
-                x = sx;
-                y = y + boxSize;
-            }
-        } // Don't use this, it doesn't work, stick to the randomly generated mazes
-
-        public int BoxSize = 50;
+        
         private void mazeBox_paint(object sender, PaintEventArgs e)
         {
-            mazePictureBox currentBox = (mazePictureBox)sender;
-            Node node = currentBox.Node;
+            nodalPictureBox currentBox = (nodalPictureBox)sender;
+            Node node = currentBox.MazeNode;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            Shape shape = new Shape(node, BoxSize, Color.Black, 5);
+            Shape shape = new Shape(node, currentMazeDimensions[2], Color.Black, 5);
             shape.DrawShape(e.Graphics);
             
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            generateRandomMaze(3, 3, 50);
-        }
-
-        private void generateRandomMaze_Button_Click(object sender, EventArgs e)
-        {
-            foreach (PictureBox p in randomMaze.Controls)
-            {
-                randomMaze.Controls.Remove(p);
-            }
-            generateRandomMaze(int.Parse(width_textBox.Text), int.Parse(height_textBox.Text), 50);
-        }
 
         private void generateNewMaze_Click(object sender, EventArgs e)
         {
-            foreach (Control c in randomMaze.Controls)
+            mazePanel.Controls.Clear();
+            if (newMaze_width.Text == "" || newMaze_height.Text == "")
             {
-                randomMaze.Controls.Remove(c);
+                MessageBox.Show("Please enter valid dimensions for the maze.");
+                return;
+            } else if (int.Parse(newMaze_width.Text) < 2 || int.Parse(newMaze_height.Text) < 2)
+            {
+                MessageBox.Show("Please enter dimensions greater than or equal to 2.");
+                return;
+            } else if (int.Parse(newMaze_width.Text) > 7 || int.Parse(newMaze_height.Text) > 7)
+            {
+                MessageBox.Show("Please enter dimensions less than or equal to 7.");
+                return;
             }
+
             createEmptyMaze(int.Parse(newMaze_width.Text), int.Parse(newMaze_height.Text), 50);
+            drawCurrentMaze();
+        }
+
+        private void prims_Button_Click(object sender, EventArgs e)
+        {
+            Random rnd = new Random();
+            int node = rnd.Next(0, currentMazeDimensions[3]);
+            primsAlgorithm(node);
         }
     }
 }
