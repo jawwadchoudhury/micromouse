@@ -38,7 +38,6 @@
             this.prims_Button = new System.Windows.Forms.Button();
             this.primaryNodeLabel = new System.Windows.Forms.Label();
             this.frontierNodeLabel = new System.Windows.Forms.Label();
-            this.adjacencyMatrix_Label = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // outputLabel1
@@ -119,7 +118,7 @@
             // primaryNodeLabel
             // 
             this.primaryNodeLabel.AutoSize = true;
-            this.primaryNodeLabel.Location = new System.Drawing.Point(13, 456);
+            this.primaryNodeLabel.Location = new System.Drawing.Point(13, 492);
             this.primaryNodeLabel.Name = "primaryNodeLabel";
             this.primaryNodeLabel.Size = new System.Drawing.Size(78, 13);
             this.primaryNodeLabel.TabIndex = 13;
@@ -128,27 +127,17 @@
             // frontierNodeLabel
             // 
             this.frontierNodeLabel.AutoSize = true;
-            this.frontierNodeLabel.Location = new System.Drawing.Point(12, 469);
+            this.frontierNodeLabel.Location = new System.Drawing.Point(12, 505);
             this.frontierNodeLabel.Name = "frontierNodeLabel";
             this.frontierNodeLabel.Size = new System.Drawing.Size(79, 13);
             this.frontierNodeLabel.TabIndex = 14;
             this.frontierNodeLabel.Text = "Frontier Nodes:";
-            // 
-            // adjacencyMatrix_Label
-            // 
-            this.adjacencyMatrix_Label.AutoSize = true;
-            this.adjacencyMatrix_Label.Location = new System.Drawing.Point(405, 9);
-            this.adjacencyMatrix_Label.Name = "adjacencyMatrix_Label";
-            this.adjacencyMatrix_Label.Size = new System.Drawing.Size(91, 13);
-            this.adjacencyMatrix_Label.TabIndex = 16;
-            this.adjacencyMatrix_Label.Text = "Adjacency Matrix:\r\n";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(652, 614);
-            this.Controls.Add(this.adjacencyMatrix_Label);
             this.Controls.Add(this.frontierNodeLabel);
             this.Controls.Add(this.primaryNodeLabel);
             this.Controls.Add(this.prims_Button);
@@ -180,7 +169,6 @@
         private System.Windows.Forms.Button prims_Button;
         private System.Windows.Forms.Label primaryNodeLabel;
         private System.Windows.Forms.Label frontierNodeLabel;
-        private System.Windows.Forms.Label adjacencyMatrix_Label;
     }
 }
 

@@ -196,7 +196,19 @@ namespace Micromouse_demo1
             //outputLabel1.Text = $"From 14 to 1/14/4/8: {intListToString(returnValidMoves(new Node(14), new Node[] { new Node(1), new Node(4), new Node(4), new Node(8) } ))}";
             //outputLabel1.Text = $"{validMove(new Node(5), new Node(3), 2)}";
         }
-        
+
+        private void clearVariables()
+        {
+            primsAlgorithmStarted = false;
+            currentMaze.Clear();
+            adjacencyMatrix.Clear();
+            currentMazeDimensions = new int[4];
+            nodeCount = 0;
+            frontierNodes.Clear();
+            primaryNodes.Clear();
+            primaryNodeLabel.Text = "Primary Nodes: ";
+            frontierNodeLabel.Text = "Frontier Nodes: ";
+        }
         private void createEmptyMaze(int width, int height,  int boxSize)
         {
             currentMaze.Clear();
@@ -214,7 +226,6 @@ namespace Micromouse_demo1
                 }
             }
             createAdjacencyMatrix(currentMaze);
-            
         }
 
         private void createAdjacencyMatrix(List<MazeNode> maze)
@@ -236,7 +247,6 @@ namespace Micromouse_demo1
                 if (bottomNode != null) adjacentNodes.Add(bottomNode.NodeIndex);
                 if (leftNode != null) adjacentNodes.Add(leftNode.NodeIndex);
                 adjacencyMatrix.Add(centralNode.NodeIndex, adjacentNodes);
-                adjacencyMatrix_Label.Text += $"Node {centralNode.NodeIndex}: {string.Join(", ", adjacentNodes)}\n";
             }
         }
         private void drawCurrentMaze()
@@ -312,7 +322,40 @@ namespace Micromouse_demo1
                 }
                 refreshColours();
             }
+            switch (random.Next(0, 4))
+            {
+                case 0:
+                    currentMaze[random.Next(0, currentMazeDimensions[0])].removeTopValue();
+                    break;
+                case 1:
+                    List<int> rightEdges = new List<int>();
+                    foreach (MazeNode node in currentMaze)
+                    {
+                        if (node.WidthCount == currentMazeDimensions[0] - 1) rightEdges.Add(node.NodeIndex);
+                    }
+                    currentMaze[rightEdges[random.Next(0, rightEdges.Count)]].removeRightValue();
+                    break;
+                case 2:
+                    currentMaze[random.Next(currentMazeDimensions[3] - currentMazeDimensions[0], currentMazeDimensions[3])].removeBottomValue();
+                    break;
+                case 3:
+                    List<int> leftEdges = new List<int>();
+                    foreach (MazeNode node in currentMaze)
+                    {
+                        if (node.WidthCount == 0) leftEdges.Add(node.NodeIndex);
+                    }
+                    currentMaze[leftEdges[random.Next(0, leftEdges.Count)]].removeLeftValue();
+                    break;
+            }
+
             drawCurrentMaze();
+
+            foreach (nodalPictureBox nodalPictureBox in mazePanel.Controls)
+            {
+                nodalPictureBox.BackColor = DefaultBackColor;
+            }
+
+            
         }
 
         private void createTunnel(int startIndex, int endIndex)
@@ -373,34 +416,27 @@ namespace Micromouse_demo1
 
             outputLabel1.Text = $"U: {(upperNode != null ? upperNode.NodeIndex.ToString() : "null")}, R: {(rightNode != null ? rightNode.NodeIndex.ToString() : "null")}, D: {(bottomNode != null ? bottomNode.NodeIndex.ToString() : "null")}, L: {(leftNode != null ? leftNode.NodeIndex.ToString() : "null")}";
 
-            //if (upperNode != null) adjacentNodes.Add(0, upperNode);
-            //if (rightNode != null) adjacentNodes.Add(1, rightNode);
-            //if (bottomNode != null) adjacentNodes.Add(2, bottomNode);
-            //if (leftNode != null) adjacentNodes.Add(3, leftNode);
             if (upperNode != null && !primaryNodes.Contains(upperNode.NodeIndex) && !frontierNodes.Contains(upperNode.NodeIndex)) frontierNodes.Add(upperNode.NodeIndex);
             if (rightNode != null && !primaryNodes.Contains(rightNode.NodeIndex) && !frontierNodes.Contains(rightNode.NodeIndex)) frontierNodes.Add(rightNode.NodeIndex);
             if (bottomNode != null && !primaryNodes.Contains(bottomNode.NodeIndex) && !frontierNodes.Contains(bottomNode.NodeIndex)) frontierNodes.Add(bottomNode.NodeIndex);
             if (leftNode != null && !primaryNodes.Contains(leftNode.NodeIndex) && !frontierNodes.Contains(leftNode.NodeIndex)) frontierNodes.Add(leftNode.NodeIndex);
             refreshLabels();
         }
-
         
         private void mazeBox_paint(object sender, PaintEventArgs e)
         {
             nodalPictureBox currentBox = (nodalPictureBox)sender;
             Node node = currentBox.MazeNode;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            Shape shape = new Shape(node, currentMazeDimensions[2], Color.Black, 5);
+            Shape shape = new Shape(node, currentMazeDimensions[2], Color.Black, 40 / Math.Max(currentMazeDimensions[0], currentMazeDimensions[1]));
             shape.DrawShape(e.Graphics);
             
         }
 
-
         private void generateNewMaze_Click(object sender, EventArgs e)
         {
             mazePanel.Controls.Clear();
-            primaryNodes.Clear();
-            frontierNodes.Clear();
+            clearVariables();
             if (newMaze_width.Text == "" || newMaze_height.Text == "")
             {
                 MessageBox.Show("Please enter valid dimensions for the maze.");
@@ -409,13 +445,15 @@ namespace Micromouse_demo1
             {
                 MessageBox.Show("Please enter dimensions greater than or equal to 3.");
                 return;
-            } else if (int.Parse(newMaze_width.Text) > 8 || int.Parse(newMaze_height.Text) > 8) // Should be 7
+            } else if (int.Parse(newMaze_width.Text) > 20 || int.Parse(newMaze_height.Text) > 20)
             {
-                MessageBox.Show("Please enter dimensions less than or equal to 5.");
+                MessageBox.Show("Please enter dimensions less than or equal to 20.");
                 return;
             }
 
-            createEmptyMaze(int.Parse(newMaze_width.Text), int.Parse(newMaze_height.Text), 50);
+            int width = int.Parse(newMaze_width.Text);
+            int height = int.Parse(newMaze_height.Text);
+            createEmptyMaze(width, height, 400 / Math.Max(width, height) );
             drawCurrentMaze();
         }
 
