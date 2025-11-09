@@ -9,23 +9,21 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Forms;
+using static Micromouse_demo1.Form1;
+using System.Reflection;
 
 namespace Micromouse_demo1
 {
     public partial class Form1 : Form
     {
+        public bool primsAlgorithmStarted = false;
         public List<MazeNode> currentMaze = new List<MazeNode>();
+        public Dictionary<int, List<int>> adjacencyMatrix = new Dictionary<int, List<int>>();
         public int[] currentMazeDimensions = new int[4]; // 0 = width, 1 = height, 2 = box size, 3 = node count
-        private Node[] topNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(8), new Node(9), new Node(10), new Node(11) };
-        private Node[] rightNodes = new Node[8] { new Node(0), new Node(1), new Node(2), new Node(3), new Node(4), new Node(5), new Node(6), new Node(7) };
-        private Node[] bottomNodes = new Node[8] { new Node(0), new Node(2), new Node(4), new Node(6), new Node(8), new Node(10), new Node(12), new Node(14) };
-        private Node[] leftNodes = new Node[8] { new Node(0), new Node(1), new Node(4), new Node(5), new Node(8), new Node(9), new Node(12), new Node(13) };
-        private int[] topIndexes = new int[8] { 0, 1, 2, 3, 8, 9, 10, 11 };
-        private int[] rightIndexes = new int[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
-        private int[] bottomIndexes = new int[8] { 0, 2, 4, 6, 8, 10, 12, 14 };
-        private int[] leftIndexes = new int[8] { 0, 1, 4, 5, 8, 9, 12, 13 };
         public int nodeCount = 0;
-        
+        List<int> frontierNodes = new List<int>();
+        List<int> primaryNodes = new List<int>();
+
         public class nodalPictureBox : System.Windows.Forms.PictureBox
         {
             public MazeNode MazeNode { get; private set; }
@@ -92,6 +90,26 @@ namespace Micromouse_demo1
             public void toggleLeftValue()
             {
                 DecimalValue ^= 8;
+            }
+
+            public void removeTopValue()
+            {
+                DecimalValue &= ~1;
+            }
+
+            public void removeRightValue()
+            {
+                DecimalValue &= ~2;
+            }
+
+            public void removeBottomValue()
+            {
+                DecimalValue &= ~4;
+            }
+
+            public void removeLeftValue()
+            {
+                DecimalValue &= ~8;
             }
 
             public int getDecimalValue()
@@ -195,9 +213,32 @@ namespace Micromouse_demo1
                     nodeIndex++;
                 }
             }
-
+            createAdjacencyMatrix(currentMaze);
+            
         }
 
+        private void createAdjacencyMatrix(List<MazeNode> maze)
+        {
+            for (int i = 0; i < maze.Count; i++)
+            {
+                List<int> adjacentNodes = new List<int>();
+                MazeNode centralNode = maze[i];
+                MazeNode upperNode;
+                MazeNode rightNode;
+                MazeNode bottomNode;
+                MazeNode leftNode;
+                upperNode = (centralNode.NodeIndex - currentMazeDimensions[0] >= 0) ? currentMaze[centralNode.NodeIndex - currentMazeDimensions[0]] : null;
+                rightNode = (centralNode.WidthCount + 1 <= currentMazeDimensions[0] - 1) ? currentMaze[centralNode.NodeIndex + 1] : null;
+                bottomNode = (centralNode.NodeIndex + currentMazeDimensions[0] < currentMazeDimensions[3]) ? currentMaze[centralNode.NodeIndex + currentMazeDimensions[0]] : null;
+                leftNode = (centralNode.WidthCount - 1 >= 0) ? currentMaze[centralNode.NodeIndex - 1] : null;
+                if (upperNode != null) adjacentNodes.Add(upperNode.NodeIndex);
+                if (rightNode != null) adjacentNodes.Add(rightNode.NodeIndex);
+                if (bottomNode != null) adjacentNodes.Add(bottomNode.NodeIndex);
+                if (leftNode != null) adjacentNodes.Add(leftNode.NodeIndex);
+                adjacencyMatrix.Add(centralNode.NodeIndex, adjacentNodes);
+                adjacencyMatrix_Label.Text += $"Node {centralNode.NodeIndex}: {string.Join(", ", adjacentNodes)}\n";
+            }
+        }
         private void drawCurrentMaze()
         {
             mazePanel.Controls.Clear();
@@ -228,45 +269,86 @@ namespace Micromouse_demo1
                 x = sx;
                 y = y + boxSize;
             }
+            refreshColours();
         }
 
-        private void primsAlgorithm(int mazeIndex)
+        private void refreshLabels()
         {
-            currentMaze[mazeIndex].setDecimalValue(0);
-            
-            MazeNode[] adjacentNodes = returnAdjacentNodes(currentMaze, mazeIndex);
-            for (int i = 0; i < 1; i++)
+            primaryNodeLabel.Text = "Primary Nodes: " + string.Join(", ", primaryNodes);
+            frontierNodeLabel.Text = "Frontier Nodes: " + string.Join(", ", frontierNodes);
+        }
+        private void refreshColours()
+        {
+            foreach (int index in frontierNodes)
             {
-                
-                Random random = new Random();
-                int x = random.Next(0, 4);
-                if (adjacentNodes[x] == null) continue;
-                switch (x)
-                {
-                    case 0:
-                        if (adjacentNodes[i].getBottomValue()) adjacentNodes[i].toggleBottomValue();
-                        break;
-                    case 1:
-                        if (adjacentNodes[i].getLeftValue()) adjacentNodes[i].toggleLeftValue();
-                        break;
-                    case 2:
-                        if (adjacentNodes[i].getTopValue()) adjacentNodes[i].toggleTopValue();
-                        break;
-                    case 3:
-                        if (adjacentNodes[i].getRightValue()) adjacentNodes[i].toggleRightValue();
-                        break;
-                }
+                nodalPictureBox adjacentBox = (nodalPictureBox)mazePanel.Controls[index];
+                adjacentBox.BackColor = Color.FromArgb(155, 255, 155);
             }
-            drawCurrentMaze();
-
-            nodalPictureBox nodalPictureBox = (nodalPictureBox)mazePanel.Controls[mazeIndex];
-            nodalPictureBox.BackColor = Color.FromArgb(255, 255, 155);
+            foreach (int index in primaryNodes)
+            {
+                nodalPictureBox primaryBox = (nodalPictureBox)mazePanel.Controls[index];
+                primaryBox.BackColor = Color.FromArgb(255, 255, 155);
+            }
         }
 
-        private MazeNode[] returnAdjacentNodes(List<MazeNode> maze, int nodeIndex)
+        private void primsAlgorithm(int startingNode)
         {
-            MazeNode[] adjacentNodes = new MazeNode[4];
+            primaryNodes.Add(startingNode);
+            refreshLabels();
 
+            Random random = new Random();
+
+            returnAdjacentNodes(currentMaze, startingNode);
+
+            createTunnel(primaryNodes[0], frontierNodes[random.Next(0, frontierNodes.Count)]);
+
+            refreshColours();
+        }
+
+        private void createTunnel(int startIndex, int endIndex)
+        {
+            returnAdjacentNodes(currentMaze, endIndex);
+            frontierNodes.Remove(endIndex);
+            primaryNodes.Add(endIndex);
+            refreshLabels();
+            switch (getDirection(startIndex, endIndex))
+            {
+                case 0: // Up
+                    currentMaze[startIndex].removeTopValue();
+                    currentMaze[endIndex].removeBottomValue();
+                    break;
+                case 1: // Right
+                    currentMaze[startIndex].removeRightValue();
+                    currentMaze[endIndex].removeLeftValue();
+                    break;
+                case 2: // Down
+                    currentMaze[startIndex].removeBottomValue();
+                    currentMaze[endIndex].removeTopValue();
+                    break;
+                case 3: // Left
+                    currentMaze[startIndex].removeLeftValue();
+                    currentMaze[endIndex].removeRightValue();
+                    break;
+                case -1:
+                    MessageBox.Show("Error in creating tunnel: Invalid direction.");
+                    break;
+            }
+        }
+
+        private int getDirection(int startIndex, int endIndex)
+        {
+            MazeNode startNode = currentMaze[startIndex];
+            MazeNode endNode = currentMaze[endIndex];
+
+            if (startIndex - currentMazeDimensions[0] == endIndex) return 0; // Up
+            if (startIndex + 1 == endIndex) return 1; // Right
+            if (startIndex + currentMazeDimensions[0] == endIndex) return 2; // Down
+            if (startIndex - 1 == endIndex) return 3; // Left
+            return -1;
+        }
+
+        private void returnAdjacentNodes(List<MazeNode> maze, int nodeIndex)
+        {
             MazeNode centralNode = maze[nodeIndex];
 
             MazeNode upperNode;
@@ -281,12 +363,15 @@ namespace Micromouse_demo1
 
             outputLabel1.Text = $"U: {(upperNode != null ? upperNode.NodeIndex.ToString() : "null")}, R: {(rightNode != null ? rightNode.NodeIndex.ToString() : "null")}, D: {(bottomNode != null ? bottomNode.NodeIndex.ToString() : "null")}, L: {(leftNode != null ? leftNode.NodeIndex.ToString() : "null")}";
 
-            if (upperNode != null) adjacentNodes[0] = upperNode;
-            if (rightNode != null) adjacentNodes[1] = rightNode;
-            if (bottomNode != null) adjacentNodes[2] = bottomNode;
-            if (leftNode != null) adjacentNodes[3] = leftNode;
-
-            return adjacentNodes;
+            //if (upperNode != null) adjacentNodes.Add(0, upperNode);
+            //if (rightNode != null) adjacentNodes.Add(1, rightNode);
+            //if (bottomNode != null) adjacentNodes.Add(2, bottomNode);
+            //if (leftNode != null) adjacentNodes.Add(3, leftNode);
+            if (upperNode != null && !primaryNodes.Contains(upperNode.NodeIndex)) frontierNodes.Add(upperNode.NodeIndex);
+            if (rightNode != null && !primaryNodes.Contains(rightNode.NodeIndex)) frontierNodes.Add(rightNode.NodeIndex);
+            if (bottomNode != null && !primaryNodes.Contains(bottomNode.NodeIndex)) frontierNodes.Add(bottomNode.NodeIndex);
+            if (leftNode != null && !primaryNodes.Contains(leftNode.NodeIndex)) frontierNodes.Add(leftNode.NodeIndex);
+            refreshLabels();
         }
 
         
@@ -312,9 +397,9 @@ namespace Micromouse_demo1
             {
                 MessageBox.Show("Please enter dimensions greater than or equal to 2.");
                 return;
-            } else if (int.Parse(newMaze_width.Text) > 7 || int.Parse(newMaze_height.Text) > 7)
+            } else if (int.Parse(newMaze_width.Text) > 5 || int.Parse(newMaze_height.Text) > 5)
             {
-                MessageBox.Show("Please enter dimensions less than or equal to 7.");
+                MessageBox.Show("Please enter dimensions less than or equal to 5.");
                 return;
             }
 
@@ -324,9 +409,27 @@ namespace Micromouse_demo1
 
         private void prims_Button_Click(object sender, EventArgs e)
         {
-            Random rnd = new Random();
-            int node = rnd.Next(0, currentMazeDimensions[3]);
-            primsAlgorithm(node);
+            if (!primsAlgorithmStarted)
+            {
+                primsAlgorithmStarted = true;
+                Random rnd = new Random();
+                int node = rnd.Next(0, currentMazeDimensions[3]);
+                primsAlgorithm(node);
+            } else
+            {
+                MessageBox.Show("Prims Algorithm has already been started.");
+                return;
+            }
+        }
+
+        private void next_Button_Click(object sender, EventArgs e)
+        {
+            Random random = new Random();
+            int primaryIndex = random.Next(1, primaryNodes.Count);
+            int frontierIndex = random.Next(1, frontierNodes.Count);
+            createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
+            refreshColours();
+            refreshLabels();
         }
     }
 }

@@ -36,6 +36,10 @@
             this.newMaze_height = new System.Windows.Forms.TextBox();
             this.generateNewMaze = new System.Windows.Forms.Button();
             this.prims_Button = new System.Windows.Forms.Button();
+            this.primaryNodeLabel = new System.Windows.Forms.Label();
+            this.frontierNodeLabel = new System.Windows.Forms.Label();
+            this.next_Button = new System.Windows.Forms.Button();
+            this.adjacencyMatrix_Label = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // outputLabel1
@@ -49,10 +53,10 @@
             // 
             // mazePanel
             // 
-            this.mazePanel.Location = new System.Drawing.Point(87, 26);
-            this.mazePanel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.mazePanel.Location = new System.Drawing.Point(3, 41);
+            this.mazePanel.Margin = new System.Windows.Forms.Padding(2);
             this.mazePanel.Name = "mazePanel";
-            this.mazePanel.Size = new System.Drawing.Size(500, 487);
+            this.mazePanel.Size = new System.Drawing.Size(400, 400);
             this.mazePanel.TabIndex = 6;
             // 
             // newMazeHeight_Label
@@ -78,7 +82,7 @@
             // newMaze_width
             // 
             this.newMaze_width.Location = new System.Drawing.Point(63, 520);
-            this.newMaze_width.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.newMaze_width.Margin = new System.Windows.Forms.Padding(2);
             this.newMaze_width.Name = "newMaze_width";
             this.newMaze_width.Size = new System.Drawing.Size(110, 20);
             this.newMaze_width.TabIndex = 9;
@@ -86,7 +90,7 @@
             // newMaze_height
             // 
             this.newMaze_height.Location = new System.Drawing.Point(63, 541);
-            this.newMaze_height.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.newMaze_height.Margin = new System.Windows.Forms.Padding(2);
             this.newMaze_height.Name = "newMaze_height";
             this.newMaze_height.Size = new System.Drawing.Size(110, 20);
             this.newMaze_height.TabIndex = 8;
@@ -94,7 +98,7 @@
             // generateNewMaze
             // 
             this.generateNewMaze.Location = new System.Drawing.Point(63, 562);
-            this.generateNewMaze.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.generateNewMaze.Margin = new System.Windows.Forms.Padding(2);
             this.generateNewMaze.Name = "generateNewMaze";
             this.generateNewMaze.Size = new System.Drawing.Size(109, 34);
             this.generateNewMaze.TabIndex = 7;
@@ -113,11 +117,53 @@
             this.prims_Button.UseVisualStyleBackColor = true;
             this.prims_Button.Click += new System.EventHandler(this.prims_Button_Click);
             // 
+            // primaryNodeLabel
+            // 
+            this.primaryNodeLabel.AutoSize = true;
+            this.primaryNodeLabel.Location = new System.Drawing.Point(13, 456);
+            this.primaryNodeLabel.Name = "primaryNodeLabel";
+            this.primaryNodeLabel.Size = new System.Drawing.Size(78, 13);
+            this.primaryNodeLabel.TabIndex = 13;
+            this.primaryNodeLabel.Text = "Primary Nodes:";
+            // 
+            // frontierNodeLabel
+            // 
+            this.frontierNodeLabel.AutoSize = true;
+            this.frontierNodeLabel.Location = new System.Drawing.Point(12, 469);
+            this.frontierNodeLabel.Name = "frontierNodeLabel";
+            this.frontierNodeLabel.Size = new System.Drawing.Size(79, 13);
+            this.frontierNodeLabel.TabIndex = 14;
+            this.frontierNodeLabel.Text = "Frontier Nodes:";
+            // 
+            // next_Button
+            // 
+            this.next_Button.Location = new System.Drawing.Point(290, 562);
+            this.next_Button.Margin = new System.Windows.Forms.Padding(2);
+            this.next_Button.Name = "next_Button";
+            this.next_Button.Size = new System.Drawing.Size(109, 34);
+            this.next_Button.TabIndex = 15;
+            this.next_Button.Text = "Next";
+            this.next_Button.UseVisualStyleBackColor = true;
+            this.next_Button.Click += new System.EventHandler(this.next_Button_Click);
+            // 
+            // adjacencyMatrix_Label
+            // 
+            this.adjacencyMatrix_Label.AutoSize = true;
+            this.adjacencyMatrix_Label.Location = new System.Drawing.Point(408, 41);
+            this.adjacencyMatrix_Label.Name = "adjacencyMatrix_Label";
+            this.adjacencyMatrix_Label.Size = new System.Drawing.Size(91, 13);
+            this.adjacencyMatrix_Label.TabIndex = 16;
+            this.adjacencyMatrix_Label.Text = "Adjacency Matrix:\r\n";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(652, 614);
+            this.Controls.Add(this.adjacencyMatrix_Label);
+            this.Controls.Add(this.next_Button);
+            this.Controls.Add(this.frontierNodeLabel);
+            this.Controls.Add(this.primaryNodeLabel);
             this.Controls.Add(this.prims_Button);
             this.Controls.Add(this.newMazeHeight_Label);
             this.Controls.Add(this.newMazeWidth_Label);
@@ -126,7 +172,7 @@
             this.Controls.Add(this.generateNewMaze);
             this.Controls.Add(this.mazePanel);
             this.Controls.Add(this.outputLabel1);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -145,6 +191,10 @@
         private System.Windows.Forms.TextBox newMaze_height;
         private System.Windows.Forms.Button generateNewMaze;
         private System.Windows.Forms.Button prims_Button;
+        private System.Windows.Forms.Label primaryNodeLabel;
+        private System.Windows.Forms.Label frontierNodeLabel;
+        private System.Windows.Forms.Button next_Button;
+        private System.Windows.Forms.Label adjacencyMatrix_Label;
     }
 }
 
