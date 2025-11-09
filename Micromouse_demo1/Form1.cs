@@ -269,6 +269,7 @@ namespace Micromouse_demo1
                 x = sx;
                 y = y + boxSize;
             }
+            refreshLabels();
             refreshColours();
         }
 
@@ -291,7 +292,7 @@ namespace Micromouse_demo1
             }
         }
 
-        private void primsAlgorithm(int startingNode)
+        private async void primsAlgorithm(int startingNode)
         {
             primaryNodes.Add(startingNode);
             refreshLabels();
@@ -300,9 +301,18 @@ namespace Micromouse_demo1
 
             returnAdjacentNodes(currentMaze, startingNode);
 
-            createTunnel(primaryNodes[0], frontierNodes[random.Next(0, frontierNodes.Count)]);
-
-            refreshColours();
+            while (frontierNodes.Count > 0)
+            {
+                await Task.Delay(2);
+                int primaryIndex = random.Next(0, primaryNodes.Count);
+                int frontierIndex = random.Next(0, frontierNodes.Count);
+                if (adjacencyMatrix[primaryNodes[primaryIndex]].Contains(frontierNodes[frontierIndex]))
+                {
+                    createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
+                }
+                refreshColours();
+            }
+            drawCurrentMaze();
         }
 
         private void createTunnel(int startIndex, int endIndex)
@@ -367,10 +377,10 @@ namespace Micromouse_demo1
             //if (rightNode != null) adjacentNodes.Add(1, rightNode);
             //if (bottomNode != null) adjacentNodes.Add(2, bottomNode);
             //if (leftNode != null) adjacentNodes.Add(3, leftNode);
-            if (upperNode != null && !primaryNodes.Contains(upperNode.NodeIndex)) frontierNodes.Add(upperNode.NodeIndex);
-            if (rightNode != null && !primaryNodes.Contains(rightNode.NodeIndex)) frontierNodes.Add(rightNode.NodeIndex);
-            if (bottomNode != null && !primaryNodes.Contains(bottomNode.NodeIndex)) frontierNodes.Add(bottomNode.NodeIndex);
-            if (leftNode != null && !primaryNodes.Contains(leftNode.NodeIndex)) frontierNodes.Add(leftNode.NodeIndex);
+            if (upperNode != null && !primaryNodes.Contains(upperNode.NodeIndex) && !frontierNodes.Contains(upperNode.NodeIndex)) frontierNodes.Add(upperNode.NodeIndex);
+            if (rightNode != null && !primaryNodes.Contains(rightNode.NodeIndex) && !frontierNodes.Contains(rightNode.NodeIndex)) frontierNodes.Add(rightNode.NodeIndex);
+            if (bottomNode != null && !primaryNodes.Contains(bottomNode.NodeIndex) && !frontierNodes.Contains(bottomNode.NodeIndex)) frontierNodes.Add(bottomNode.NodeIndex);
+            if (leftNode != null && !primaryNodes.Contains(leftNode.NodeIndex) && !frontierNodes.Contains(leftNode.NodeIndex)) frontierNodes.Add(leftNode.NodeIndex);
             refreshLabels();
         }
 
@@ -389,15 +399,17 @@ namespace Micromouse_demo1
         private void generateNewMaze_Click(object sender, EventArgs e)
         {
             mazePanel.Controls.Clear();
+            primaryNodes.Clear();
+            frontierNodes.Clear();
             if (newMaze_width.Text == "" || newMaze_height.Text == "")
             {
                 MessageBox.Show("Please enter valid dimensions for the maze.");
                 return;
-            } else if (int.Parse(newMaze_width.Text) < 2 || int.Parse(newMaze_height.Text) < 2)
+            } else if (int.Parse(newMaze_width.Text) < 3 || int.Parse(newMaze_height.Text) < 3)
             {
-                MessageBox.Show("Please enter dimensions greater than or equal to 2.");
+                MessageBox.Show("Please enter dimensions greater than or equal to 3.");
                 return;
-            } else if (int.Parse(newMaze_width.Text) > 5 || int.Parse(newMaze_height.Text) > 5)
+            } else if (int.Parse(newMaze_width.Text) > 8 || int.Parse(newMaze_height.Text) > 8) // Should be 7
             {
                 MessageBox.Show("Please enter dimensions less than or equal to 5.");
                 return;
@@ -422,14 +434,5 @@ namespace Micromouse_demo1
             }
         }
 
-        private void next_Button_Click(object sender, EventArgs e)
-        {
-            Random random = new Random();
-            int primaryIndex = random.Next(1, primaryNodes.Count);
-            int frontierIndex = random.Next(1, frontierNodes.Count);
-            createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
-            refreshColours();
-            refreshLabels();
-        }
     }
 }
