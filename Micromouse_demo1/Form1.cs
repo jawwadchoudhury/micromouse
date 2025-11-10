@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,7 +20,7 @@ namespace Micromouse_demo1
         public List<MazeNode> currentMaze = new List<MazeNode>();
         public Dictionary<int, List<int>> adjacencyMatrix = new Dictionary<int, List<int>>();
         public int[] currentMazeDimensions = new int[4]; // 0 = width, 1 = height, 2 = box size, 3 = node count
-        public int nodeCount = 0;
+        public Random random = new Random();
         List<int> frontierNodes = new List<int>();
         List<int> primaryNodes = new List<int>();
 
@@ -191,19 +191,15 @@ namespace Micromouse_demo1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //generateMaze(maze, 3, 3, 50);
-            //generateRandomMaze(3, 3, 50);
-            //outputLabel1.Text = $"From 14 to 1/14/4/8: {intListToString(returnValidMoves(new Node(14), new Node[] { new Node(1), new Node(4), new Node(4), new Node(8) } ))}";
-            //outputLabel1.Text = $"{validMove(new Node(5), new Node(3), 2)}";
         }
 
-        private void clearVariables()
+        private void clearAll()
         {
+            mazePanel.Controls.Clear();
             primsAlgorithmStarted = false;
             currentMaze.Clear();
             adjacencyMatrix.Clear();
             currentMazeDimensions = new int[4];
-            nodeCount = 0;
             frontierNodes.Clear();
             primaryNodes.Clear();
             primaryNodeLabel.Text = "Primary Nodes: ";
@@ -279,8 +275,10 @@ namespace Micromouse_demo1
                 x = sx;
                 y = y + boxSize;
             }
-            refreshLabels();
-            refreshColours();
+            foreach (nodalPictureBox nodalPictureBox in mazePanel.Controls)
+            {
+                nodalPictureBox.BackColor = DefaultBackColor;
+            }
         }
 
         private void refreshLabels()
@@ -302,26 +300,56 @@ namespace Micromouse_demo1
             }
         }
 
+        private List<int> Shuffle(List<int> list) // Fisher-Yates Shuffle
+        {
+            List<int> shuffledList = new List<int>();
+            int count = list.Count;
+            while (count > 0)
+            {
+                count--;
+                int randomIndex = random.Next(0, count);
+                shuffledList.Add(list[randomIndex]);
+                list.Remove(list[randomIndex]);
+            }
+            return shuffledList;
+        }
         private async void primsAlgorithm(int startingNode)
         {
-            primaryNodes.Add(startingNode);
+            primaryNodes.Add(startingNode); // Turn the starting node into a primary node
             refreshLabels();
 
-            Random random = new Random();
+            returnAdjacentNodes(currentMaze, startingNode); // Get frontier nodes of the starting primary node
 
-            returnAdjacentNodes(currentMaze, startingNode);
-
+            // Iterate tunnel function
+            //while (frontierNodes.Count > 0)
+            //{
+            //    await Task.Delay(2);
+            //    int primaryIndex = random.Next(0, primaryNodes.Count);
+            //    int frontierIndex = random.Next(0, frontierNodes.Count);
+            //    if (adjacencyMatrix[primaryNodes[primaryIndex]].Contains(frontierNodes[frontierIndex]))
+            //    {
+            //        createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
+            //    }
+            //    refreshColours();
+            //}
             while (frontierNodes.Count > 0)
             {
-                await Task.Delay(2);
-                int primaryIndex = random.Next(0, primaryNodes.Count);
-                int frontierIndex = random.Next(0, frontierNodes.Count);
-                if (adjacencyMatrix[primaryNodes[primaryIndex]].Contains(frontierNodes[frontierIndex]))
+                await Task.Delay(20);
+                List<int> frontierAdjacentNodes;
+                int frontierNodeIndex = frontierNodes[random.Next(0, frontierNodes.Count)];
+                adjacencyMatrix.TryGetValue(frontierNodeIndex, out frontierAdjacentNodes);
+                foreach (int index in Shuffle(frontierAdjacentNodes))
                 {
-                    createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
+                    if (primaryNodes.Contains(index))
+                    {
+                        createTunnel(index, frontierNodeIndex);
+                        break;
+                    }
                 }
                 refreshColours();
             }
+
+            //Block to create an exit (on one of the edge nodes)
             switch (random.Next(0, 4))
             {
                 case 0:
@@ -348,14 +376,7 @@ namespace Micromouse_demo1
                     break;
             }
 
-            drawCurrentMaze();
-
-            foreach (nodalPictureBox nodalPictureBox in mazePanel.Controls)
-            {
-                nodalPictureBox.BackColor = DefaultBackColor;
-            }
-
-            
+            drawCurrentMaze(); // Redraw the maze (without the weird buggy lines)
         }
 
         private void createTunnel(int startIndex, int endIndex)
@@ -366,24 +387,24 @@ namespace Micromouse_demo1
             refreshLabels();
             switch (getDirection(startIndex, endIndex))
             {
-                case 0: // Up
+                case 0:
                     currentMaze[startIndex].removeTopValue();
                     currentMaze[endIndex].removeBottomValue();
                     break;
-                case 1: // Right
+                case 1:
                     currentMaze[startIndex].removeRightValue();
                     currentMaze[endIndex].removeLeftValue();
                     break;
-                case 2: // Down
+                case 2:
                     currentMaze[startIndex].removeBottomValue();
                     currentMaze[endIndex].removeTopValue();
                     break;
-                case 3: // Left
+                case 3:
                     currentMaze[startIndex].removeLeftValue();
                     currentMaze[endIndex].removeRightValue();
                     break;
                 case -1:
-                    MessageBox.Show("Error in creating tunnel: Invalid direction.");
+                    MessageBox.Show("Invalid direction");
                     break;
             }
         }
@@ -435,8 +456,7 @@ namespace Micromouse_demo1
 
         private void generateNewMaze_Click(object sender, EventArgs e)
         {
-            mazePanel.Controls.Clear();
-            clearVariables();
+            clearAll();
             if (newMaze_width.Text == "" || newMaze_height.Text == "")
             {
                 MessageBox.Show("Please enter valid dimensions for the maze.");
@@ -453,7 +473,7 @@ namespace Micromouse_demo1
 
             int width = int.Parse(newMaze_width.Text);
             int height = int.Parse(newMaze_height.Text);
-            createEmptyMaze(width, height, 400 / Math.Max(width, height) );
+            createEmptyMaze(width, height, 390 / Math.Max(width, height) );
             drawCurrentMaze();
         }
 
@@ -462,8 +482,7 @@ namespace Micromouse_demo1
             if (!primsAlgorithmStarted)
             {
                 primsAlgorithmStarted = true;
-                Random rnd = new Random();
-                int node = rnd.Next(0, currentMazeDimensions[3]);
+                int node = random.Next(0, currentMazeDimensions[3]);
                 primsAlgorithm(node);
             } else
             {
