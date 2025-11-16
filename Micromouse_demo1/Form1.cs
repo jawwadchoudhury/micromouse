@@ -1,16 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
 using System.Windows.Forms;
-using static Micromouse_demo1.Form1;
-using System.Reflection;
 
 namespace Micromouse_demo1
 {
@@ -183,6 +175,35 @@ namespace Micromouse_demo1
                 }
             }
         }
+        public class Graph
+        {
+            public GraphNode Root { get; private set; }
+
+            public Graph(GraphNode root)
+            {
+                Root = root;
+            }
+        }
+
+        public class GraphNode
+        {
+            public int NodeIndex { get; private set; }
+            public GraphNode Top { get; private set; }
+            public GraphNode Right { get; private set; }
+            public GraphNode Bottom { get; private set; }
+            public GraphNode Left { get; private set; }
+
+            public GraphNode(int nodeIndex, GraphNode top = null, GraphNode right = null, GraphNode bottom = null, GraphNode left = null)
+            {
+                NodeIndex = nodeIndex;
+                Top = top;
+                Right = right;
+                Bottom = bottom;
+                Left = left;
+            }
+
+        }
+
 
         public Form1()
         {
@@ -318,20 +339,9 @@ namespace Micromouse_demo1
             primaryNodes.Add(startingNode); // Turn the starting node into a primary node
             refreshLabels();
 
-            returnAdjacentNodes(currentMaze, startingNode); // Get frontier nodes of the starting primary node
+            returnFrontierNodes(currentMaze, startingNode); // Get frontier nodes of the starting primary node
 
             // Iterate tunnel function
-            //while (frontierNodes.Count > 0)
-            //{
-            //    await Task.Delay(2);
-            //    int primaryIndex = random.Next(0, primaryNodes.Count);
-            //    int frontierIndex = random.Next(0, frontierNodes.Count);
-            //    if (adjacencyMatrix[primaryNodes[primaryIndex]].Contains(frontierNodes[frontierIndex]))
-            //    {
-            //        createTunnel(primaryNodes[primaryIndex], frontierNodes[frontierIndex]);
-            //    }
-            //    refreshColours();
-            //}
             while (frontierNodes.Count > 0)
             {
                 await Task.Delay(20);
@@ -381,7 +391,7 @@ namespace Micromouse_demo1
 
         private void createTunnel(int startIndex, int endIndex)
         {
-            returnAdjacentNodes(currentMaze, endIndex);
+            returnFrontierNodes(currentMaze, endIndex);
             frontierNodes.Remove(endIndex);
             primaryNodes.Add(endIndex);
             refreshLabels();
@@ -421,7 +431,7 @@ namespace Micromouse_demo1
             return -1;
         }
 
-        private void returnAdjacentNodes(List<MazeNode> maze, int nodeIndex)
+        private void returnFrontierNodes(List<MazeNode> maze, int nodeIndex)
         {
             MazeNode centralNode = maze[nodeIndex];
 
@@ -443,7 +453,29 @@ namespace Micromouse_demo1
             if (leftNode != null && !primaryNodes.Contains(leftNode.NodeIndex) && !frontierNodes.Contains(leftNode.NodeIndex)) frontierNodes.Add(leftNode.NodeIndex);
             refreshLabels();
         }
-        
+
+        private int[] returnAdjacentIndexes(int nodeIndex)
+        {
+            int[] adjacentIndexes = new int[4];
+            MazeNode centralNode = currentMaze[nodeIndex];
+
+            int upperIndex;
+            int rightIndex;
+            int bottomIndex;
+            int leftIndex;
+
+            upperIndex = (centralNode.NodeIndex - currentMazeDimensions[0] >= 0) ? centralNode.NodeIndex - currentMazeDimensions[0] : -1;
+            rightIndex = (centralNode.WidthCount + 1 <= currentMazeDimensions[0] - 1) ? centralNode.NodeIndex + 1 : -1;
+            bottomIndex = (centralNode.NodeIndex + currentMazeDimensions[0] < currentMazeDimensions[3]) ? centralNode.NodeIndex + currentMazeDimensions[0] : -1;
+            leftIndex = (centralNode.WidthCount - 1 >= 0) ? centralNode.NodeIndex - 1 : -1;
+
+            if (upperIndex != -1) adjacentIndexes[0] = upperIndex;
+            if (rightIndex != -1) adjacentIndexes[1] = rightIndex;
+            if (bottomIndex != -1) adjacentIndexes[2] = bottomIndex;
+            if (leftIndex != -1) adjacentIndexes[3] = leftIndex;
+            return adjacentIndexes;
+        }
+
         private void mazeBox_paint(object sender, PaintEventArgs e)
         {
             nodalPictureBox currentBox = (nodalPictureBox)sender;
