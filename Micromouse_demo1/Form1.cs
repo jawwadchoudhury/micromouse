@@ -12,8 +12,8 @@ namespace Micromouse_demo1
         public bool graphGenerationStarted = false;
         public List<MazeNode> currentMaze = new List<MazeNode>();
         public Dictionary<int, List<int>> adjacencyMatrix = new Dictionary<int, List<int>>();
+        public WeightedAdjacencyMatrix weightedAdjacencyMatrix;
         public int[] currentMazeData = new int[6]; // 0 = width, 1 = height, 2 = box size, 3 = node count, 4 = exit node index, 5 = start node index
-        public Graph mazeGraph = new Graph(0);
         public Random random = new Random();
         List<int> frontierNodes = new List<int>();
         List<int> primaryNodes = new List<int>();
@@ -177,23 +177,41 @@ namespace Micromouse_demo1
                 }
             }
         }
-        public class Graph
+        public class WeightedAdjacencyMatrix
         {
             // This is stupid so i have a better idea! Weighted adjacency matrix. Get a node, go straight in each direction till you hit a wall, add that weight into the adjacency matrix,
             // do this for all 4 directions, then iterate over each one of them, kind of like the frontier thing again
             // we'll see how that goes yeah
-            public Graph top;
-            public Graph right;
-            public Graph bottom;
-            public Graph left;
-            public int StartIndex;
-            public Graph(int startIndex, int? topIndex = null, int? rightIndex = null, int? bottomIndex = null, int? leftIndex = null)
+            private int StartingIndex;
+            private Dictionary<int, List<int[]>> adjacencyDictionary;
+            public WeightedAdjacencyMatrix(int startingIndex)
             {
-                StartIndex = startIndex;
-                top = null;
-                right = null;
-                bottom = null;
-                left = null;
+                StartingIndex = startingIndex;
+            }
+
+            //public void addValue(int nodeIndex, int adjacentNodeIndex, int weight)
+            //{
+            //    int[] valuePair = new int[2] {adjacentNodeIndex, weight};
+            //    if (adjacencyDictionary.TryGetValue(nodeIndex, out var weightedValues)) {
+            //        if (!weightedValues.Contains(valuePair))
+            //        {
+            //            weightedValues.Add(valuePair);
+            //            adjacencyDictionary.Add(nodeIndex, weightedValues);
+            //        }
+            //    } else
+            //    {
+            //        adjacencyDictionary.Add(nodeIndex, new List<int[]> { new int[] { adjacentNodeIndex, weight } });
+            //    }
+            //}
+            public string test()
+            {
+                if (adjacencyDictionary.TryGetValue(0, out var list))
+                {
+                    return list.ToString();
+                } else
+                {
+                    return "error...";
+                }
             }
         }
         public Form1()
@@ -235,7 +253,6 @@ namespace Micromouse_demo1
             }
             createAdjacencyMatrix(currentMaze);
         }
-
         private void createAdjacencyMatrix(List<MazeNode> maze)
         {
             for (int i = 0; i < maze.Count; i++)
@@ -293,7 +310,6 @@ namespace Micromouse_demo1
                 nodalPictureBox.BackColor = DefaultBackColor;
             }
         }
-
         private void refreshLabels()
         {
             primaryNodeLabel.Text = "Primary Nodes: " + string.Join(", ", primaryNodes);
@@ -388,26 +404,8 @@ namespace Micromouse_demo1
         private async void graphGenerationAlgorithm(int startingNode)
         {
             graphGenerationStarted = true;
-            mazeGraph = new Graph(startingNode);
-            foreach (nodalPictureBox box in mazePanel.Controls)
-            {
-                frontierNodeLabel.Text += box.MazeNode.NodeIndex.ToString() + ", ";
-                int[] adjacentIndexes = returnAdjacentIndexes(box.MazeNode.NodeIndex);
-                int adjacentIndexCount = returnAdjacentIndexCount(box.MazeNode.NodeIndex);
-                if (adjacentIndexCount == 4)
-                {
-                    box.BackColor = Color.FromArgb(155, 155, 255);
-                } else if (adjacentIndexCount == 3)
-                {
-                    box.BackColor = Color.FromArgb(155, 255, 155);
-                } else if (adjacentIndexCount == 2)
-                {
-                    box.BackColor = Color.FromArgb(255, 155, 155);
-                } else if (adjacentIndexCount == 1)
-                {
-                    box.BackColor = Color.FromArgb(255, 255, 155);
-                }
-            }
+            weightedAdjacencyMatrix = new WeightedAdjacencyMatrix(startingNode);
+            weightedAdjacencyMatrix.test();
         }
 
         private void createTunnel(int startIndex, int endIndex)
@@ -495,23 +493,6 @@ namespace Micromouse_demo1
             if (bottomIndex != -1) adjacentIndexes[2] = bottomIndex;
             if (leftIndex != -1) adjacentIndexes[3] = leftIndex;
             return adjacentIndexes;
-        }
-
-        private int returnAdjacentIndexCount(int nodeIndex)
-        {
-            MazeNode centralNode = currentMaze[nodeIndex];
-
-            int upperIndex;
-            int rightIndex;
-            int bottomIndex;
-            int leftIndex;
-
-            upperIndex = (centralNode.NodeIndex - currentMazeData[0] >= 0) ? 1 : 0;
-            rightIndex = (centralNode.WidthCount + 1 <= currentMazeData[0] - 1) ? 1 : 0;
-            bottomIndex = (centralNode.NodeIndex + currentMazeData[0] < currentMazeData[3]) ? 1 : 0;
-            leftIndex = (centralNode.WidthCount - 1 >= 0) ? 1 : 0;
-
-            return upperIndex + rightIndex + bottomIndex + leftIndex;
         }
 
         private void mazeBox_Paint(object sender, PaintEventArgs e)
